@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>لوحة تحكم TV durar</title>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<style>
+body{margin:0;background:#232731;color:#fff;font-family:sans-serif;padding:16px}
+h2{text-align:center} h2 span{color:#C0283C}
+input,select,button{width:100%;padding:13px;margin:6px 0;border-radius:10px;border:0;font-size:16px;box-sizing:border-box}
+input,select{background:#2e3342;color:#fff} button{background:#C0283C;color:#fff;font-weight:bold;cursor:pointer}
+button.green{background:#2e9e5b} button.blue{background:#43C6DB;color:#000}
+.card{background:#2e3342;padding:12px;border-radius:12px;margin:10px 0;display:flex;gap:10px;align-items:center}
+.card img{width:60px;height:80px;object-fit:cover;border-radius:8px} .card div{flex:1} .del{background:#ff3b30;padding:8px 12px;width:auto}
+#login,#panel{display:none} #login.show,#panel.show{display:block}
+textarea{width:100%;height:120px;background:#111;color:#0f0;padding:10px;border-radius:10px;direction:ltr}
+</style>
+</head>
+<body>
+<div id="login" class="show">
+<h2>TV <span>durar</span> - لوحة تحكم</h2>
+<p style="text-align:center;color:#FFD54F">خاصة بالمالك فقط</p>
+<input type="password" id="pass" placeholder="كلمة السر">
+<button onclick="login()">دخول</button><p id="err" style="color:#ff5b5b;text-align:center"></p>
+</div>
+<div id="panel">
+<h2>إضافة جديد</h2>
+<input id="title" placeholder="اسم الفيلم">
+<select id="type"><option value="movie">فيلم</option><option value="series">مسلسل</option><option value="live">بث مباشر</option><option value="video">فيديو</option></select>
+<input id="url" placeholder="رابط الفيديو mp4 او m3u8" dir="ltr">
+<input id="poster" placeholder="رابط الصورة" dir="ltr">
+<button class="green" onclick="addItem()">+ إضافة - يوصل للزبون مباشرة</button>
+<button class="blue" onclick="loadOld()">جلب الافلام القديمة من movies.json</button>
+<h3>القائمة الحالية (<span id="count">0</span>)</h3>
+<div id="list"></div>
+<button onclick="logout()" style="background:#555">خروج</button>
+</div>
+<script>
+const firebaseConfig = {
+  apiKey: "PASTE_HERE",
+  authDomain: "PASTE_HERE",
+  databaseURL: "PASTE_HERE",
+  projectId: "PASTE_HERE",
+};
+firebase.initializeApp(firebaseConfig);
+let db = firebase.database();
+let PASSWORD = "1234";
+let data = {};
+function login(){ if(document.getElementById('pass').value === PASSWORD){ document.getElementById('login').classList.remove('show'); document.getElementById('panel').classList.add('show'); } else document.getElementById('err').innerText="كلمة السر غلط"; }
+function logout(){ location.reload(); }
+function addItem(){
+  let t=document.getElementById('title').value.trim();
+  let u=document.getElementById('url').value.trim();
+  if(!t||!u){ alert('اكتب الاسم والرابط'); return; }
+  db.ref('movies').push({ title:t, type:document.getElementById('type').value, url:u, poster:document.getElementById('poster').value.trim() });
+  document.getElementById('title').value=''; document.getElementById('url').value=''; document.getElementById('poster').value='';
+  alert('تم! وصل للزبون');
+}
+function del(key){ if(confirm('تحذف هذا؟')) db.ref('movies/'+key).remove(); }
+function loadOld(){
+  fetch('movies.json?t='+Date.now()).then(r=>r.json()).then(j=>{
+    j.forEach(o=>{ db.ref('movies').push(o); });
+    alert('تم نقل '+j.length+' عنصر لـ Firebase');
+  });
+}
+db.ref('movies').on('value', (snap)=>{
+  data = snap.val() || {}; let keys = Object.keys(data);
+  document.getElementById('count').innerText = keys.length;
+  let l=document.getElementById('list'); l.innerHTML='';
+  keys.forEach(k=>{ let o=data[k]; l.innerHTML += '<div class="card"><img src="'+(o.poster||'https://via.placeholder.com/60x80?text=TV')+'"><div><b>'+o.title+'</b><br><small>'+o.type+'</small></div><button class="del" onclick="del(\''+k+'\')">حذف</button></div>'; });
+});
+</script>
+</body>
+</html>
