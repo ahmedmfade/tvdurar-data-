@@ -1,6 +1,5 @@
 [
-  {"title": "قناة 1", "type": "live", "url": "https://example.com/live.m3u8"},
-  {"title": "فيديو 1", "type": "video", "url": "https://example.com/a.mp4"},
-  {"title": "فيلم 1", "type": "movie", "url": "https://example.com/m.mp4"},
-  {"title": "مسلسل 1", "type": "series", "url": "https://example.com/s.mp4"}
+  {"title": "تجربة فيديو", "type": "video", "url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"},
+  {"title": "تجربة بث مباشر", "type": "live", "url": "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"},
+  {"title": "تجربة فيلم", "type": "movie", "url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"}
 ]
