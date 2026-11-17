@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TV durar</title>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#12131a;color:#fff;font-family:sans-serif;padding-bottom:30px}
+header{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:12px;padding:12px 14px;background:rgba(18,19,26,.95)}
+.menu{font-size:26px;cursor:pointer}
+.logo{font-size:24px;font-weight:900;flex:1}
+.logo span{color:#C0283C;font-style:italic}
+.search-box{display:flex;align-items:center;background:#23252f;border-radius:25px;overflow:hidden;width:42px;transition:.35s}
+.search-box.open{width:170px}
+.search-box input{border:0;outline:0;background:transparent;color:#fff;padding:10px;width:100%;display:none;font-size:15px}
+.search-box.open input{display:block}
+.search-btn{padding:9px 11px;cursor:pointer;background:none;border:0;font-size:18px}
+.hero{margin:12px;border-radius:20px;overflow:hidden;position:relative;height:220px;background:#000}
+.hero img{width:100%;height:100%;object-fit:cover;opacity:.75}
+.hero-info{position:absolute;bottom:0;left:0;right:0;padding:16px;background:linear-gradient(transparent,rgba(0,0,0,.9))}
+.hero-info h2{font-size:22px;margin-bottom:6px}
+.hero-info p{font-size:13px;color:#ccc;margin-bottom:10px}
+.hero-info button{background:#C0283C;color:#fff;border:0;padding:10px 22px;border-radius:25px;font-weight:bold;font-size:15px;cursor:pointer}
+.hero-info button:last-child{background:#fff;color:#000;margin-right:8px}
+.cats{display:flex;gap:8px;overflow-x:auto;padding:4px 14px;scrollbar-width:none}
+.cats::-webkit-scrollbar{display:none}
+.cat{white-space:nowrap;background:#23252f;padding:9px 18px;border-radius:25px;font-size:14px;cursor:pointer;border:1px solid transparent}
+.cat.active{background:#C0283C;border-color:#C0283C;font-weight:bold}
+.section-title{padding:16px 14px 6px;font-size:18px;font-weight:bold;display:flex;justify-content:space-between;align-items:center}
+.section-title small{font-size:12px;color:#FFD54F;font-weight:normal}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:6px 12px}
+.card{background:#1e202b;border-radius:16px;overflow:hidden;cursor:pointer;position:relative}
+.card img{width:100%;height:190px;object-fit:cover;background:#000;display:block}
+.card .badge{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.7);padding:4px 10px;border-radius:20px;font-size:11px}
+.card .info{padding:10px}
+.card .info b{font-size:15px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card .info small{color:#9aa0b0;font-size:12px}
+.empty{text-align:center;color:#888;padding:40px 20px}
+.sidebar{position:fixed;top:0;right:-280px;width:280px;height:100%;background:#1a1c26;transition:.3s;z-index:30;padding:20px;box-shadow:-10px 0 30px rgba(0,0,0,.5)}
+.sidebar.open{right:0}
+.sidebar h3{margin-bottom:20px;font-size:22px}
+.sidebar h3 span{color:#C0283C}
+.sidebar a{display:flex;align-items:center;gap:10px;color:#fff;padding:14px 10px;font-size:16px;cursor:pointer;border-bottom:1px solid #2a2d3a;border-radius:10px}
+.sidebar a.active{background:#23252f;color:#43C6DB}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;z-index:25}
+.overlay.show{display:block}
+.close-sidebar{text-align:left;font-size:22px;cursor:pointer;color:#aaa}
+#player{position:fixed;inset:0;background:#000;display:none;z-index:50}
+#player video{width:100%;height:100%}
+#close{position:absolute;top:12px;left:12px;background:#C0283C;color:#fff;border:0;padding:10px 16px;border-radius:20px;z-index:2;cursor:pointer}
+#status{text-align:center;color:#FFD54F;padding:8px;font-size:13px}
+</style>
+</head>
+<body>
+<header>
+<div class="menu" onclick="toggleMenu()">☰</div>
+<div class="logo">TV <span>durar</span></div>
+<div class="search-box" id="searchBox"><button class="search-btn" onclick="toggleSearch()">🔍</button><input id="q" placeholder="ابحث عن فيلم..." oninput="draw()"></div>
+</header>
+<div class="overlay" id="overlay" onclick="toggleMenu()"></div>
+<div class="sidebar" id="sidebar">
+<div class="close-sidebar" onclick="toggleMenu()">✕</div>
+<h3>TV <span>durar</span></h3>
+<a onclick="setFilter('all')" data-f="all">🏠 الرئيسية</a>
+<a onclick="setFilter('movie')" data-f="movie">🎬 أفلام</a>
+<a onclick="setFilter('series')" data-f="series">📺 مسلسلات</a>
+<a onclick="setFilter('live')" data-f="live">📡 بث مباشر <span style="color:#ff3b30">● LIVE</span></a>
+<a onclick="setFilter('video')" data-f="video">🎥 فيديوهات</a>
+<p style="margin-top:30px;color:#666;font-size:12px;text-align:center">نسخة 2.0 - TV durar JAVA</p>
+</div>
+<div class="hero" id="hero" style="display:none">
+<img id="heroImg" src="">
+<div class="hero-info">
+<h2 id="heroTitle"></h2>
+<p id="heroType"></p>
+<button onclick="playHero()">▶ تشغيل الآن</button>
+<button onclick="document.getElementById('grid').scrollIntoView({behavior:'smooth'})">تصفح الكل</button>
+</div>
+</div>
+<div class="cats" id="cats">
+<div class="cat active" data-f="all" onclick="setFilter('all')">الكل</div>
+<div class="cat" data-f="movie" onclick="setFilter('movie')">🎬 أفلام</div>
+<div class="cat" data-f="series" onclick="setFilter('series')">📺 مسلسلات</div>
+<div class="cat" data-f="live" onclick="setFilter('live')">📡 بث مباشر</div>
+<div class="cat" data-f="video" onclick="setFilter('video')">🎥 فيديوهات</div>
+</div>
+<div class="section-title"><span id="secTitle">الأحدث 🔥</span><small id="count"></small></div>
+<div id="status"></div>
+<div class="grid" id="grid"></div>
+<div class="empty" id="empty" style="display:none">لا توجد نتائج 😔<br>جرب بحث ثاني</div>
+<div id="player"><button id="close" onclick="closePlayer()">✕ رجوع</button><video id="v" controls autoplay playsinline></video></div>
+<script>
+const firebaseConfig = {
+  apiKey: "PASTE_HERE",
+  authDomain: "PASTE_HERE",
+  databaseURL: "PASTE_HERE",
+  projectId: "PASTE_HERE",
+};
+let useFirebase = firebaseConfig.apiKey !== "PASTE_HERE";
+if(useFirebase){ firebase.initializeApp(firebaseConfig); }
+let db = useFirebase ? firebase.database() : null;
+let data=[], filter='all', heroUrl='';
+function toggleMenu(){ document.getElementById('sidebar').classList.toggle('open'); document.getElementById('overlay').classList.toggle('show'); }
+function toggleSearch(){ let b=document.getElementById('searchBox'); b.classList.toggle('open'); if(b.classList.contains('open')) document.getElementById('q').focus(); }
+function setFilter(f){ filter=f; document.querySelectorAll('.cat').forEach(c=>c.classList.toggle('active', c.dataset.f==f)); document.querySelectorAll('.sidebar a').forEach(c=>c.classList.toggle('active', c.dataset.f==f)); let titles={all:'الأحدث 🔥', movie:'أفلام 🎬', series:'مسلسلات 📺', live:'بث مباشر 📡', video:'فيديوهات 🎥'}; document.getElementById('secTitle').innerText=titles[f]||'الأحدث'; if(document.getElementById('sidebar').classList.contains('open')) toggleMenu(); draw(); }
+function typeName(t){ if(t=='movie') return '🎬 فيلم'; if(t=='series') return '📺 مسلسل'; if(t=='live') return '📡 بث مباشر'; return '🎥 فيديو'; }
+function draw(){ let q=document.getElementById('q').value.toLowerCase(); let g=document.getElementById('grid'); g.innerHTML=''; let list=data.filter(o=>(filter=='all'||o.type==filter) && o.title.toLowerCase().includes(q)); document.getElementById('count').innerText=list.length+' عنصر'; document.getElementById('empty').style.display=list.length==0?'block':'none'; list.forEach(o=>{ let img = o.poster || o.image || 'https://via.placeholder.com/400x600/1e202b/ffffff?text='+encodeURIComponent(o.title); let d=document.createElement('div'); d.className='card'; d.innerHTML='<span class="badge">'+typeName(o.type)+'</span><img src="'+img+'" loading="lazy"><div class="info"><b>'+o.title+'</b><small>'+typeName(o.type)+' • اضغط للتشغيل</small></div>'; d.onclick=()=>play(o.url); g.appendChild(d); }); }
+function play(url){ let p=document.getElementById('player'); p.style.display='block'; let v=document.getElementById('v'); v.src=url; v.play(); }
+function playHero(){ if(heroUrl) play(heroUrl); }
+function closePlayer(){ let v=document.getElementById('v'); v.pause(); v.src=''; document.getElementById('player').style.display='none'; }
+function setData(j){ data=j; document.getElementById('status').innerText=''; if(j.length>0){ let h=j[0]; heroUrl=h.url; document.getElementById('hero').style.display='block'; document.getElementById('heroImg').src=h.poster || 'https://via.placeholder.com/800x400/1e202b/ffffff?text='+encodeURIComponent(h.title); document.getElementById('heroTitle').innerText=h.title; document.getElementById('heroType').innerText=typeName(h.type); } draw(); }
+if(useFirebase){
+  db.ref('movies').on('value', (snap)=>{ let val=snap.val(); setData(val ? Object.values(val) : []); document.getElementById('status').innerText='تحديث مباشر 🔴'; });
+} else {
+  fetch('movies.json?t='+Date.now()).then(r=>r.json()).then(j=>setData(j)).catch(e=>{document.getElementById('status').innerText='خطأ بالتحميل: '+e});
+}
+</script>
+</body>
+</html>
